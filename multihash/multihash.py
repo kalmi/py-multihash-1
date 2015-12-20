@@ -56,6 +56,7 @@ class MultiHash(_MultiHash):  # NOQA
 
 
 def decode(mh_bytes):
+    ensure_byteness(mh_bytes)
     len_mh_bytes = len(mh_bytes)
     if len_mh_bytes > 127:
         fmt_str = 'Multihash {0} bytes long. Must be < 129 bytes'
