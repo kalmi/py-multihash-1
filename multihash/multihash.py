@@ -4,18 +4,13 @@ import six
 from . import exceptions as exc
 from . import constants
 
-def len_compat(digest):
-    if six.PY3 and isinstance(digest, str):
-        return len(digest.encode('utf8'))
-    if six.PY2 and isinstance(digest, unicode):
-        return len(digest.encode('utf8'))
-    return len(digest)
 
-
-def digest_compat(digest):
-    if six.PY3 and isinstance(digest, bytes):
-        return digest.decode('utf8')
-    return digest
+def ensure_byteness(digest):
+    # Note: py3's bytes type is basically py2's str type.
+    if six.PY3 and not isinstance(digest, bytes):
+        raise ValueError("Input must be of type bytes in Python 3.x")
+    if six.PY2 and not isinstance(digest, str):
+        raise ValueError("Input must be of type str in Python 2.x")
 
 def ident_name_code(ident):
     'Coerce hash ident (name or code) to tuple (name, code)'
@@ -30,7 +25,8 @@ _MultiHash = collections.namedtuple('MultiHash', 'name code length digest')
 class MultiHash(_MultiHash):  # NOQA
 
     def __new__(cls, ident, digest, length=None):
-        len_digest = len_compat(digest)
+        ensure_byteness(digest)
+        len_digest = len(digest)
         if length and len_digest != length:
             raise exc.InconsistentLen('Digest length should be equal to '
                                       'specified length.')
@@ -40,7 +36,7 @@ class MultiHash(_MultiHash):  # NOQA
             raise exc.LenNotSupported('Multihash does not yet support digests '
                                       'longer than 127 bytes')
         name, code = ident_name_code(ident)
-        init_args = cls, name, code, length, digest_compat(digest)
+        init_args = cls, name, code, length, digest
         return super(MultiHash, cls).__new__(*init_args)
 
     def __eq__(self, other):
@@ -54,10 +50,7 @@ class MultiHash(_MultiHash):  # NOQA
 
     def encode(self):
         struct_fmt = "BB{0}s".format(self.length)
-        if six.PY3:
-            digest = self.digest.encode('utf-8')
-        else:
-            digest = self.digest
+        digest = self.digest
         struct_args = self.code, self.length, digest
         return struct.pack(struct_fmt, *struct_args)
 
