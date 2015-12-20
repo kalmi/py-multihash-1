@@ -1,4 +1,7 @@
 # coding: utf-8
+
+import six
+
 import multihash
 
 
@@ -13,7 +16,9 @@ def test_encode_sha1_nolen():
 
 
 def test_encode_sha1_utf8():
-    digest = u'💻'.encode('utf-8')
+    digest = '💻'
+    if six.PY3:
+        digest = digest.encode('utf-8')
     mh = multihash.MultiHash('sha1', digest)
     encoded = mh.encode()
     assert encoded == b'\x11\x04\xf0\x9f\x92\xbb'
